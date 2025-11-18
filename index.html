@@ -98,7 +98,7 @@
 <script>
 const proxy = "/api/proxy?url=";
 
-// Helper: convert vanity URL to SteamID64
+// Convert vanity to SteamID64
 async function resolveSteamID(input) {
   if (!isNaN(input)) return input;
   const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text();
@@ -107,13 +107,13 @@ async function resolveSteamID(input) {
   return match[1];
 }
 
-// Helper: fetch friend IDs
+// Fetch friend IDs
 async function fetchFriendIDs(steamID64) {
   const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text();
   return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
 }
 
-// Helper: fetch friend name
+// Fetch friend name
 async function fetchFriendName(id) {
   try {
     const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
@@ -143,7 +143,6 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
     if (input2) {
       const id2 = await resolveSteamID(input2);
       const friends2 = await fetchFriendIDs(id2);
-      // Intersection
       mutualFriends = friends1.filter(f => friends2.includes(f));
     }
 
@@ -152,21 +151,27 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
       return;
     }
 
-    // Sort alphabetically
-    const friendsWithNames = await Promise.all(mutualFriends.map(async id => {
-      const name = await fetchFriendName(id);
-      return { id, name };
-    }));
-    friendsWithNames.sort((a,b) => a.name.localeCompare(b.name));
+    // Store friend objects
+    const friendsData = [];
 
-    // Render table
-    friendsWithNames.forEach(friend => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${friend.name}</td>
-        <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
-      `;
-      tbody.appendChild(row);
+    function renderTable() {
+      tbody.innerHTML = '';
+      friendsData.sort((a,b) => a.name.localeCompare(b.name));
+      friendsData.forEach(friend => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${friend.name}</td>
+          <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Fetch names asynchronously and render sorted table as they arrive
+    mutualFriends.forEach(async id => {
+      const name = await fetchFriendName(id);
+      friendsData.push({id, name});
+      renderTable();
     });
 
   } catch(err) {
