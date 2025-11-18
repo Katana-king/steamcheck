@@ -163,7 +163,8 @@ function renderTable(filter = "") {
   let filtered = friendsData;
   if (filter) {
     const lower = filter.toLowerCase();
-    filtered = friendsData.filter(f => f.name.toLowerCase().includes(lower));
+    // Only show names that start with typed letters
+    filtered = friendsData.filter(f => f.name.toLowerCase().startsWith(lower));
   }
   filtered.sort((a, b) => a.name.localeCompare(b.name));
   filtered.forEach(friend => {
