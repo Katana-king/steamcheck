@@ -3,153 +3,115 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Steam Friends Tool with Search</title>
+<title>Steam Friends Dashboard</title>
 <style>
-/* Base */
+/* Dark Mode Dashboard */
 body {
   font-family: 'Inter', sans-serif;
-  background: #0f1724;
-  color: #e6eef8;
+  background: #0b0f1a;
+  color: #e0e0e0;
   display: flex;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 50px 20px;
 }
 
-/* Container */
 .container {
   width: 700px;
-  background: #1e293b;
+  background: #1a202c;
   border-radius: 16px;
   padding: 30px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-  transition: transform 0.2s;
-}
-.container:hover {
-  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.6);
 }
 
-/* Headings */
 h2 {
-  font-weight: 600;
-  margin-bottom: 20px;
+  font-weight: 700;
   text-align: center;
-  color: #f1f5f9;
+  margin-bottom: 20px;
+  color: #81a1c1;
 }
 
-/* Inputs & Selects & Button */
-input, button, select {
+input, button {
   width: 100%;
   padding: 12px;
-  margin-top: 10px;
-  border-radius: 10px;
-  border: 1px solid #334155;
+  margin-top: 12px;
+  border-radius: 8px;
+  border: none;
   font-size: 15px;
   outline: none;
-  transition: all 0.2s;
 }
 
 input {
-  background: #1e293b;
-  color: #e6eef8;
-}
-input:focus, select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.3);
+  background: #2e3440;
+  color: #d8dee9;
 }
 
-select {
-  background: #1e293b;
-  color: #e6eef8;
+input::placeholder {
+  color: #a0a0a0;
 }
 
 button {
-  background: #3b82f6;
-  color: #fff;
+  background: #5e81ac;
+  color: #eceff4;
   font-weight: 600;
   cursor: pointer;
-  border: none;
+  transition: 0.2s;
 }
+
 button:hover {
-  background: #2563eb;
+  background: #4c70a0;
 }
 
-/* Small text */
-small {
-  display: block;
-  margin-top: 4px;
-  color: #94a3b8;
-  font-size: 12px;
-}
-
-/* Table */
 table {
   width: 100%;
   margin-top: 20px;
   border-collapse: collapse;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
 th, td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid #2e3440;
   vertical-align: middle;
-  color: #e6eef8;
 }
 
 th {
-  background: #334155;
-  color: #f1f5f9;
-  font-weight: 600;
-}
-
-tr:hover {
-  background: #1e293b;
+  color: #81a1c1;
 }
 
 a {
-  color: #3b82f6;
+  color: #88c0d0;
   text-decoration: none;
-  font-weight: 500;
 }
+
 a:hover {
   text-decoration: underline;
 }
 
-/* Hidden utility */
-.hidden {
-  display: none;
+#searchInput {
+  margin-top: 20px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
 }
 </style>
 </head>
 <body>
 <div class="container">
-  <h2>Steam Friends Tool with Live Search</h2>
-
-  <label for="modeSelect">Choose Mode:</label>
-  <select id="modeSelect">
-    <option value="check">Check Friends</option>
-    <option value="compare">Compare Friends</option>
-  </select>
-
-  <div id="inputSection">
-    <input id="steamInput1" placeholder="Enter first SteamID64 (e.g., 7656xxxxxxxxxxxx)">
-    <small>Example: 7656xxxxxxxxxxxx (SteamID64 has 17 digits)</small>
-
-    <input id="steamInput2" class="hidden" placeholder="Enter second SteamID64 (e.g., 7656xxxxxxxxxxxx)">
-    <small id="helper2" class="hidden">Example: 7656xxxxxxxxxxxx (for comparison)</small>
-  </div>
-
+  <h2>Steam Friends Dashboard</h2>
+  <input id="steamInput" placeholder="Enter SteamID64 or Vanity URL">
   <button id="loadBtn">Load Friends</button>
-
   <input id="searchInput" class="hidden" placeholder="Search friends by name...">
 
   <table id="results" hidden>
     <thead>
       <tr>
-        <th>Friend</th>
+        <th>Avatar</th>
+        <th>Friend Name</th>
         <th>Profile</th>
       </tr>
     </thead>
@@ -158,24 +120,12 @@ a:hover {
 </div>
 
 <script>
-// JS remains same
 const proxy = "/api/proxy?url=";
-const modeSelect = document.getElementById("modeSelect");
-const input2 = document.getElementById("steamInput2");
-const helper2 = document.getElementById("helper2");
+const steamInput = document.getElementById("steamInput");
 const searchInput = document.getElementById("searchInput");
-let friendsData = []; 
+let friendsData = [];
 
-modeSelect.addEventListener("change", () => {
-  if (modeSelect.value === "compare") {
-    input2.classList.remove("hidden");
-    helper2.classList.remove("hidden");
-  } else {
-    input2.classList.add("hidden");
-    helper2.classList.add("hidden");
-  }
-});
-
+// Convert vanity URL to SteamID64
 async function resolveSteamID(input) {
   if (!isNaN(input)) return input;
   const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text();
@@ -184,21 +134,29 @@ async function resolveSteamID(input) {
   return match[1];
 }
 
+// Fetch friend IDs
 async function fetchFriendIDs(steamID64) {
   const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text();
   return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
 }
 
-async function fetchFriendName(id) {
+// Fetch friend info (name + avatar)
+async function fetchFriendInfo(id) {
   try {
     const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
     const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
-    return nameMatch ? nameMatch[1].trim() : "Unknown";
+    const avatarMatch = profileHTML.match(/<img class="playerAvatar.*?" src="([^"]+)"/);
+    return {
+      id,
+      name: nameMatch ? nameMatch[1].trim() : "Unknown",
+      avatar: avatarMatch ? avatarMatch[1] : "https://via.placeholder.com/40"
+    };
   } catch {
-    return "Unknown";
+    return {id, name: "Unknown", avatar: "https://via.placeholder.com/40"};
   }
 }
 
+// Render table
 function renderTable(filter = "") {
   const tbody = document.getElementById("tblBody");
   tbody.innerHTML = "";
@@ -211,6 +169,7 @@ function renderTable(filter = "") {
   filtered.forEach(friend => {
     const row = document.createElement("tr");
     row.innerHTML = `
+      <td><img class="avatar" src="${friend.avatar}" alt="avatar"></td>
       <td>${friend.name}</td>
       <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
     `;
@@ -219,38 +178,24 @@ function renderTable(filter = "") {
 }
 
 document.getElementById("loadBtn").addEventListener("click", async () => {
-  const input1 = document.getElementById("steamInput1").value.trim();
-  const input2Val = document.getElementById("steamInput2").value.trim();
-
-  if (!input1) return alert("Enter at least one SteamID or vanity URL!");
-
+  const inputVal = steamInput.value.trim();
+  if (!inputVal) return alert("Enter a SteamID or vanity URL!");
   document.getElementById("results").hidden = false;
   searchInput.classList.remove("hidden");
   friendsData = [];
   renderTable();
 
   try {
-    const id1 = await resolveSteamID(input1);
-    const friends1 = await fetchFriendIDs(id1);
-
-    let friendsToShow = friends1;
-
-    if (modeSelect.value === "compare") {
-      if (!input2Val) return alert("Enter second SteamID or vanity URL for comparison.");
-      const id2 = await resolveSteamID(input2Val);
-      const friends2 = await fetchFriendIDs(id2);
-      friendsToShow = friends1.filter(f => friends2.includes(f));
-    }
-
-    if (!friendsToShow.length) {
-      const tbody = document.getElementById("tblBody");
-      tbody.innerHTML = `<tr><td colspan="2">No friends found.</td></tr>`;
+    const id = await resolveSteamID(inputVal);
+    const friendIDs = await fetchFriendIDs(id);
+    if (!friendIDs.length) {
+      document.getElementById("tblBody").innerHTML = `<tr><td colspan="3">No friends found.</td></tr>`;
       return;
     }
 
-    friendsToShow.forEach(async id => {
-      const name = await fetchFriendName(id);
-      friendsData.push({id, name});
+    friendIDs.forEach(async fid => {
+      const info = await fetchFriendInfo(fid);
+      friendsData.push(info);
       renderTable(searchInput.value);
     });
 
@@ -259,6 +204,7 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
   }
 });
 
+// Live search
 searchInput.addEventListener("input", (e) => {
   renderTable(e.target.value);
 });
