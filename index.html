@@ -24,7 +24,7 @@
 
     <table id="table" hidden>
       <thead>
-        <tr><th>Avatar</th><th>Friend</th><th>Profile</th></tr>
+        <tr><th>Avatar</th><th>Friend</th><th>Level</th><th>Profile</th></tr>
       </thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -53,11 +53,11 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       steamID64 = match[1];
     }
 
-    // Fetch friends page (HTML, not XML)
+    // Fetch friend list HTML
     const friendsRes = await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`));
     const html = await friendsRes.text();
 
-    // Extract friends using regex
+    // Extract friends & names
     const friends = [...html.matchAll(/data-steamid="(\d+)".*?friend_block_content">([^<]+)/gms)];
 
     if (!friends.length) {
@@ -71,10 +71,15 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       const profileUrl = `https://steamcommunity.com/profiles/${friendID}`;
       const avatar = `https://avatars.akamai.steamstatic.com/${friendID}.jpg`;
 
+      // extract level (optional)
+      const levelMatch = new RegExp(`data-steamid="${friendID}".*?friendPlayerLevelNum">(\\d+)`, "s").exec(html);
+      const level = levelMatch ? levelMatch[1] : "?";
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><img class="avatar" src="${avatar}" alt="avatar"></td>
         <td>${friendName}</td>
+        <td>${level}</td>
         <td><a href="${profileUrl}" target="_blank">View Profile</a></td>
       `;
       tbody.appendChild(tr);
