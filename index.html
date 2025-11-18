@@ -3,9 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Steam Friends Checker</title>
+<title>Steam Mutual Friends Checker</title>
 <style>
-  /* Base layout */
   body {
     font-family: 'Inter', sans-serif;
     background: #0f1724;
@@ -16,7 +15,7 @@
   }
 
   .container {
-    width: 600px;
+    width: 650px;
     background: #1e293b;
     border-radius: 16px;
     padding: 30px;
@@ -80,9 +79,10 @@
 </head>
 <body>
 <div class="container">
-  <h2>Steam Friends Checker</h2>
-  <input id="steamInput" placeholder="Enter SteamID64 or vanity URL">
-  <button id="loadBtn">Load Friends</button>
+  <h2>Steam Mutual Friends Checker</h2>
+  <input id="steamInput1" placeholder="Enter first SteamID64 or vanity URL">
+  <input id="steamInput2" placeholder="Enter second SteamID64 or vanity URL (optional)">
+  <button id="loadBtn">Check Mutual Friends</button>
 
   <table id="results" hidden>
     <thead>
@@ -98,54 +98,81 @@
 <script>
 const proxy = "/api/proxy?url=";
 
-document.getElementById("loadBtn").addEventListener("click", async () => {
-  const input = document.getElementById("steamInput").value.trim();
-  if (!input) return alert("Enter a SteamID or vanity URL!");
+// Helper: convert vanity URL to SteamID64
+async function resolveSteamID(input) {
+  if (!isNaN(input)) return input;
+  const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text();
+  const match = xmlTxt.match(/<steamID64>(\d+)<\/steamID64>/);
+  if (!match) throw new Error("Invalid vanity URL or private profile.");
+  return match[1];
+}
 
-  const resultsTable = document.getElementById("results");
+// Helper: fetch friend IDs
+async function fetchFriendIDs(steamID64) {
+  const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text();
+  return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
+}
+
+// Helper: fetch friend name
+async function fetchFriendName(id) {
+  try {
+    const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
+    const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
+    return nameMatch ? nameMatch[1].trim() : "Unknown";
+  } catch {
+    return "Unknown";
+  }
+}
+
+document.getElementById("loadBtn").addEventListener("click", async () => {
+  const input1 = document.getElementById("steamInput1").value.trim();
+  const input2 = document.getElementById("steamInput2").value.trim();
+
+  if (!input1) return alert("Enter at least one SteamID or vanity URL!");
+
   const tbody = document.getElementById("tblBody");
-  resultsTable.hidden = false;
+  document.getElementById("results").hidden = false;
   tbody.innerHTML = "";
 
-  let steamID64 = input;
-
   try {
-    if (isNaN(input)) {
-      const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text();
-      const match = xmlTxt.match(/<steamID64>(\d+)<\/steamID64>/);
-      if (!match) throw new Error("Invalid vanity URL or private profile.");
-      steamID64 = match[1];
+    const id1 = await resolveSteamID(input1);
+    const friends1 = await fetchFriendIDs(id1);
+
+    let mutualFriends = friends1;
+
+    if (input2) {
+      const id2 = await resolveSteamID(input2);
+      const friends2 = await fetchFriendIDs(id2);
+      // Intersection
+      mutualFriends = friends1.filter(f => friends2.includes(f));
     }
 
-    const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text();
-    const friendIDs = [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
-    if (!friendIDs.length) throw new Error("Could not read friends list — might be private.");
+    if (!mutualFriends.length) {
+      tbody.innerHTML = `<tr><td colspan="2">No mutual friends found.</td></tr>`;
+      return;
+    }
 
-    for (let friendID of friendIDs) {
+    // Sort alphabetically
+    const friendsWithNames = await Promise.all(mutualFriends.map(async id => {
+      const name = await fetchFriendName(id);
+      return { id, name };
+    }));
+    friendsWithNames.sort((a,b) => a.name.localeCompare(b.name));
+
+    // Render table
+    friendsWithNames.forEach(friend => {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td>Loading…</td>
-        <td><a href="https://steamcommunity.com/profiles/${friendID}" target="_blank">View Profile</a></td>
+        <td>${friend.name}</td>
+        <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
       `;
       tbody.appendChild(row);
-      fetchFriendName(friendID, row);
-    }
+    });
 
   } catch(err) {
     alert(err.message);
   }
 });
-
-async function fetchFriendName(id, row) {
-  try {
-    const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
-    const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
-    const nameCell = row.querySelector("td");
-    nameCell.textContent = nameMatch ? nameMatch[1].trim() : "Unknown";
-  } catch {
-    row.querySelector("td").textContent = "Unknown";
-  }
-}
 </script>
 </body>
 </html>
