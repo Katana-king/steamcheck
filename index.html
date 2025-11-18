@@ -60,12 +60,6 @@ select {
   color: #e6eef8;
 }
 
-p#summary {
-  margin-top: 10px;
-  font-weight: 500;
-  color: #f87171;
-}
-
 table {
   width: 100%;
   margin-top: 20px;
@@ -79,14 +73,6 @@ th, td {
   vertical-align: middle;
 }
 
-img.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  margin-right: 8px;
-  vertical-align: middle;
-}
-
 a {
   color: #3b82f6;
   text-decoration: none;
@@ -94,11 +80,6 @@ a {
 
 a:hover {
   text-decoration: underline;
-}
-
-.friend-name {
-  display: flex;
-  align-items: center;
 }
 
 .hidden {
@@ -123,13 +104,10 @@ a:hover {
 
   <button id="loadBtn">Load Friends</button>
 
-  <p id="summary"></p>
-
   <table id="results" hidden>
     <thead>
       <tr>
         <th>Friend</th>
-        <th>Status</th>
         <th>Profile</th>
       </tr>
     </thead>
@@ -139,10 +117,8 @@ a:hover {
 
 <script>
 const proxy = "/api/proxy?url=";
-
 const modeSelect = document.getElementById("modeSelect");
 const input2 = document.getElementById("steamInput2");
-const summary = document.getElementById("summary");
 
 // Show/hide second input based on mode
 modeSelect.addEventListener("change", () => {
@@ -168,24 +144,14 @@ async function fetchFriendIDs(steamID64) {
   return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
 }
 
-// Fetch friend info (name + avatar + status)
-async function fetchFriendInfo(id) {
+// Fetch friend name only
+async function fetchFriendName(id) {
   try {
     const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
-
-    // Detect banned/limited/deleted accounts
-    let status = "Active";
-    if (/profileLimited/.test(profileHTML)) status = "Limited";
-    if (/profileDeleted/.test(profileHTML)) status = "Deleted";
-
     const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
-    const name = nameMatch ? nameMatch[1].trim() : "Unknown";
-
-    const avatar = `https://avatars.steamstatic.com/${id}_medium.jpg`;
-
-    return { id, name, avatar, status };
+    return nameMatch ? nameMatch[1].trim() : "Unknown";
   } catch {
-    return { id, name: "Unknown", avatar: "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg", status: "Unknown" };
+    return "Unknown";
   }
 }
 
@@ -198,7 +164,6 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
   const tbody = document.getElementById("tblBody");
   document.getElementById("results").hidden = false;
   tbody.innerHTML = "";
-  summary.textContent = "";
 
   try {
     const id1 = await resolveSteamID(input1);
@@ -214,7 +179,7 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
     }
 
     if (!friendsToShow.length) {
-      tbody.innerHTML = `<tr><td colspan="3">No friends found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="2">No friends found.</td></tr>`;
       return;
     }
 
@@ -226,25 +191,16 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
       friendsData.forEach(friend => {
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td class="friend-name"><img src="${friend.avatar}" class="avatar">${friend.name}</td>
-          <td>${friend.status}</td>
+          <td>${friend.name}</td>
           <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
         `;
         tbody.appendChild(row);
       });
-
-      // Show banned/limited count only in Check mode
-      if (modeSelect.value === "check") {
-        const bannedCount = friendsData.filter(f => f.status === "Limited" || f.status === "Deleted").length;
-        summary.textContent = `Banned/Restricted friends: ${bannedCount}`;
-      } else {
-        summary.textContent = "";
-      }
     }
 
     friendsToShow.forEach(async id => {
-      const info = await fetchFriendInfo(id);
-      friendsData.push(info);
+      const name = await fetchFriendName(id);
+      friendsData.push({id, name});
       renderTable();
     });
 
