@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Steam Friends Tool</title>
+<title>Steam Friends Tool with Search</title>
 <style>
 body {
   font-family: 'Inter', sans-serif;
@@ -89,7 +89,7 @@ a:hover {
 </head>
 <body>
 <div class="container">
-  <h2>Steam Friends Tool</h2>
+  <h2>Steam Friends Tool with Live Search</h2>
 
   <label for="modeSelect">Choose Mode:</label>
   <select id="modeSelect">
@@ -103,6 +103,8 @@ a:hover {
   </div>
 
   <button id="loadBtn">Load Friends</button>
+
+  <input id="searchInput" class="hidden" placeholder="Search friends by name...">
 
   <table id="results" hidden>
     <thead>
@@ -119,14 +121,13 @@ a:hover {
 const proxy = "/api/proxy?url=";
 const modeSelect = document.getElementById("modeSelect");
 const input2 = document.getElementById("steamInput2");
+const searchInput = document.getElementById("searchInput");
+let friendsData = []; // Store all friends for live search
 
 // Show/hide second input based on mode
 modeSelect.addEventListener("change", () => {
-  if (modeSelect.value === "compare") {
-    input2.classList.remove("hidden");
-  } else {
-    input2.classList.add("hidden");
-  }
+  if (modeSelect.value === "compare") input2.classList.remove("hidden");
+  else input2.classList.add("hidden");
 });
 
 // Convert vanity to SteamID64
@@ -155,15 +156,36 @@ async function fetchFriendName(id) {
   }
 }
 
+// Render table with optional filter
+function renderTable(filter = "") {
+  const tbody = document.getElementById("tblBody");
+  tbody.innerHTML = "";
+  let filtered = friendsData;
+  if (filter) {
+    const lower = filter.toLowerCase();
+    filtered = friendsData.filter(f => f.name.toLowerCase().includes(lower));
+  }
+  filtered.sort((a, b) => a.name.localeCompare(b.name));
+  filtered.forEach(friend => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${friend.name}</td>
+      <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
 document.getElementById("loadBtn").addEventListener("click", async () => {
   const input1 = document.getElementById("steamInput1").value.trim();
   const input2Val = document.getElementById("steamInput2").value.trim();
 
   if (!input1) return alert("Enter at least one SteamID or vanity URL!");
 
-  const tbody = document.getElementById("tblBody");
   document.getElementById("results").hidden = false;
-  tbody.innerHTML = "";
+  searchInput.classList.remove("hidden");
+  friendsData = [];
+  renderTable();
 
   try {
     const id1 = await resolveSteamID(input1);
@@ -179,34 +201,25 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
     }
 
     if (!friendsToShow.length) {
+      const tbody = document.getElementById("tblBody");
       tbody.innerHTML = `<tr><td colspan="2">No friends found.</td></tr>`;
       return;
-    }
-
-    const friendsData = [];
-
-    function renderTable() {
-      tbody.innerHTML = '';
-      friendsData.sort((a,b) => a.name.localeCompare(b.name));
-      friendsData.forEach(friend => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${friend.name}</td>
-          <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
-        `;
-        tbody.appendChild(row);
-      });
     }
 
     friendsToShow.forEach(async id => {
       const name = await fetchFriendName(id);
       friendsData.push({id, name});
-      renderTable();
+      renderTable(searchInput.value);
     });
 
   } catch(err) {
     alert(err.message);
   }
+});
+
+// Live search
+searchInput.addEventListener("input", (e) => {
+  renderTable(e.target.value);
 });
 </script>
 </body>
