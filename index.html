@@ -127,22 +127,23 @@ async function fetchFriendIDs(steamID64) {
   return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
 }
 
-// Fetch friend name and avatar
+// Generate friend info (name + avatar URL)
 async function fetchFriendInfo(id) {
   try {
     const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
-
-    // Name
     const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
     const name = nameMatch ? nameMatch[1].trim() : "Unknown";
 
-    // Avatar
-    const avatarMatch = profileHTML.match(/src="([^"]+)"[^>]*class="playerAvatar"/);
-    const avatar = avatarMatch ? avatarMatch[1] : "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg";
+    // Avatar URL based on SteamID64
+    const avatar = `https://avatars.steamstatic.com/${id}_medium.jpg`;
 
     return { id, name, avatar };
   } catch {
-    return { id, name: "Unknown", avatar: "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg" };
+    return {
+      id,
+      name: "Unknown",
+      avatar: "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg"
+    };
   }
 }
 
@@ -173,12 +174,11 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
       return;
     }
 
-    // Store friend objects
     const friendsData = [];
 
     function renderTable() {
       tbody.innerHTML = '';
-      friendsData.sort((a,b) => a.name.localeCompare(b.name));
+      friendsData.sort((a, b) => a.name.localeCompare(b.name));
       friendsData.forEach(friend => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -189,14 +189,14 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
       });
     }
 
-    // Fetch info asynchronously
+    // Fetch friend info asynchronously
     mutualFriends.forEach(async id => {
       const info = await fetchFriendInfo(id);
       friendsData.push(info);
       renderTable();
     });
 
-  } catch(err) {
+  } catch (err) {
     alert(err.message);
   }
 });
