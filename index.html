@@ -3,100 +3,119 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Steam Mutual Friends Checker</title>
+<title>Steam Friends Tool</title>
 <style>
-  body {
-    font-family: 'Inter', sans-serif;
-    background: #0f1724;
-    color: #e6eef8;
-    display: flex;
-    justify-content: center;
-    padding: 40px 20px;
-  }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0f1724;
+  color: #e6eef8;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
 
-  .container {
-    width: 700px;
-    background: #1e293b;
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-  }
+.container {
+  width: 700px;
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
 
-  h2 {
-    font-weight: 600;
-    margin-bottom: 20px;
-    text-align: center;
-  }
+h2 {
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+}
 
-  input, button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    border-radius: 8px;
-    border: none;
-    font-size: 15px;
-    outline: none;
-  }
+input, button, select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 15px;
+  outline: none;
+}
 
-  input {
-    background: #334155;
-    color: #e6eef8;
-  }
+input {
+  background: #334155;
+  color: #e6eef8;
+}
 
-  button {
-    background: #3b82f6;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
+button {
+  background: #3b82f6;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
 
-  button:hover {
-    background: #2563eb;
-  }
+button:hover {
+  background: #2563eb;
+}
 
-  table {
-    width: 100%;
-    margin-top: 20px;
-    border-collapse: collapse;
-  }
+select {
+  background: #334155;
+  color: #e6eef8;
+}
 
-  th, td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #334155;
-    vertical-align: middle;
-  }
+table {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+}
 
-  img.avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    margin-right: 8px;
-    vertical-align: middle;
-  }
+th, td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #334155;
+  vertical-align: middle;
+}
 
-  a {
-    color: #3b82f6;
-    text-decoration: none;
-  }
+img.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
 
-  a:hover {
-    text-decoration: underline;
-  }
+a {
+  color: #3b82f6;
+  text-decoration: none;
+}
 
-  .friend-name {
-    display: flex;
-    align-items: center;
-  }
+a:hover {
+  text-decoration: underline;
+}
+
+.friend-name {
+  display: flex;
+  align-items: center;
+}
+
+.hidden {
+  display: none;
+}
 </style>
 </head>
 <body>
 <div class="container">
-  <h2>Steam Mutual Friends Checker</h2>
-  <input id="steamInput1" placeholder="Enter first SteamID64 or vanity URL">
-  <input id="steamInput2" placeholder="Enter second SteamID64 or vanity URL (optional)">
-  <button id="loadBtn">Check Mutual Friends</button>
+  <h2>Steam Friends Tool</h2>
+
+  <label for="modeSelect">Choose Mode:</label>
+  <select id="modeSelect">
+    <option value="check">Check Friends</option>
+    <option value="compare">Compare Friends</option>
+  </select>
+
+  <div id="inputSection">
+    <input id="steamInput1" placeholder="Enter SteamID64 or vanity URL">
+    <input id="steamInput2" class="hidden" placeholder="Enter second SteamID64 or vanity URL">
+  </div>
+
+  <button id="loadBtn">Load Friends</button>
 
   <table id="results" hidden>
     <thead>
@@ -111,6 +130,18 @@
 
 <script>
 const proxy = "/api/proxy?url=";
+
+const modeSelect = document.getElementById("modeSelect");
+const input2 = document.getElementById("steamInput2");
+
+// Show/hide second input based on mode
+modeSelect.addEventListener("change", () => {
+  if (modeSelect.value === "compare") {
+    input2.classList.remove("hidden");
+  } else {
+    input2.classList.add("hidden");
+  }
+});
 
 // Convert vanity to SteamID64
 async function resolveSteamID(input) {
@@ -127,29 +158,24 @@ async function fetchFriendIDs(steamID64) {
   return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
 }
 
-// Generate friend info (name + avatar URL)
+// Fetch friend info (name + avatar)
 async function fetchFriendInfo(id) {
   try {
     const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
     const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
     const name = nameMatch ? nameMatch[1].trim() : "Unknown";
 
-    // Avatar URL based on SteamID64
     const avatar = `https://avatars.steamstatic.com/${id}_medium.jpg`;
 
     return { id, name, avatar };
   } catch {
-    return {
-      id,
-      name: "Unknown",
-      avatar: "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg"
-    };
+    return { id, name: "Unknown", avatar: "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg" };
   }
 }
 
 document.getElementById("loadBtn").addEventListener("click", async () => {
   const input1 = document.getElementById("steamInput1").value.trim();
-  const input2 = document.getElementById("steamInput2").value.trim();
+  const input2Val = document.getElementById("steamInput2").value.trim();
 
   if (!input1) return alert("Enter at least one SteamID or vanity URL!");
 
@@ -161,16 +187,17 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
     const id1 = await resolveSteamID(input1);
     const friends1 = await fetchFriendIDs(id1);
 
-    let mutualFriends = friends1;
+    let friendsToShow = friends1;
 
-    if (input2) {
-      const id2 = await resolveSteamID(input2);
+    if (modeSelect.value === "compare") {
+      if (!input2Val) return alert("Enter second SteamID or vanity URL for comparison.");
+      const id2 = await resolveSteamID(input2Val);
       const friends2 = await fetchFriendIDs(id2);
-      mutualFriends = friends1.filter(f => friends2.includes(f));
+      friendsToShow = friends1.filter(f => friends2.includes(f));
     }
 
-    if (!mutualFriends.length) {
-      tbody.innerHTML = `<tr><td colspan="2">No mutual friends found.</td></tr>`;
+    if (!friendsToShow.length) {
+      tbody.innerHTML = `<tr><td colspan="2">No friends found.</td></tr>`;
       return;
     }
 
@@ -178,7 +205,7 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
 
     function renderTable() {
       tbody.innerHTML = '';
-      friendsData.sort((a, b) => a.name.localeCompare(b.name));
+      friendsData.sort((a,b) => a.name.localeCompare(b.name));
       friendsData.forEach(friend => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -189,14 +216,13 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
       });
     }
 
-    // Fetch friend info asynchronously
-    mutualFriends.forEach(async id => {
+    friendsToShow.forEach(async id => {
       const info = await fetchFriendInfo(id);
       friendsData.push(info);
       renderTable();
     });
 
-  } catch (err) {
+  } catch(err) {
     alert(err.message);
   }
 });
