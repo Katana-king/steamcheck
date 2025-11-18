@@ -60,6 +60,7 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
         const friendIDs = [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
         if (!friendIDs.length) throw new Error("Could not read friends list — might be private.");
 
+        // Render all avatars immediately
         for (let friendID of friendIDs) {
             const row = document.createElement("tr");
             row.innerHTML = `
@@ -70,9 +71,8 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
             `;
             tbody.appendChild(row);
 
-            // Fetch nickname + level
+            // Fetch profile info in background without blocking others
             fetchFriendProfile(friendID, row);
-            await new Promise(r => setTimeout(r, 150)); // slow down to reduce scraping issues
         }
 
     } catch(err) {
