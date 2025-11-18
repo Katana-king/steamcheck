@@ -11,7 +11,7 @@
   button { cursor:pointer; background:#3b82f6; color:#fff; font-weight:600;}
   table { width:100%; border-collapse:collapse; margin-top:12px;}
   th, td { padding:8px; text-align:left; border-bottom:1px solid #1a2030; font-size:13px;}
-  img.avatar { width:36px; height:36px; border-radius:6px; vertical-align:middle;}
+  img.avatar { width:32px; height:32px; border-radius:5px; vertical-align:middle; object-fit:cover;}
   td a { color:#60a5fa; text-decoration:none; }
 </style>
 </head>
@@ -43,7 +43,7 @@ document.getElementById('startBtn').addEventListener('click', async () => {
   table.hidden = false;
 
   try {
-    // Convert vanity to SteamID64
+    // Convert vanity to SteamID64 if needed
     let steamID64 = steamId;
     if (isNaN(steamId)) {
       const res = await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${steamId}/?xml=1`));
@@ -53,11 +53,11 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       steamID64 = match[1];
     }
 
-    // Fetch friend list HTML
+    // Fetch friends HTML
     const friendsRes = await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`));
     const html = await friendsRes.text();
 
-    // Extract friends & names
+    // Extract friend entries
     const friends = [...html.matchAll(/data-steamid="(\d+)".*?friend_block_content">([^<]+)/gms)];
 
     if (!friends.length) {
@@ -69,11 +69,16 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       const friendID = match[1];
       const friendName = match[2].trim();
       const profileUrl = `https://steamcommunity.com/profiles/${friendID}`;
-      const avatar = `https://avatars.akamai.steamstatic.com/${friendID}.jpg`;
 
-      // extract level (optional)
-      const levelMatch = new RegExp(`data-steamid="${friendID}".*?friendPlayerLevelNum">(\\d+)`, "s").exec(html);
-      const level = levelMatch ? levelMatch[1] : "?";
+      // extract avatar URL (small thumbnail)
+      const imgRegex = new RegExp(`data-steamid="${friendID}".*?<img[^>]+src="([^"]+)"`, "s");
+      const imgMatch = imgRegex.exec(html);
+      const avatar = imgMatch ? imgMatch[1].replace(".jpg", "_thumb.jpg") : "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg";
+
+      // extract steam level if present
+      const lvlRegex = new RegExp(`data-steamid="${friendID}".*?friendPlayerLevelNum">(\\d+)`, "s");
+      const lvlMatch = lvlRegex.exec(html);
+      const level = lvlMatch ? lvlMatch[1] : "?";
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -85,7 +90,7 @@ document.getElementById('startBtn').addEventListener('click', async () => {
       tbody.appendChild(tr);
     }
 
-  } catch(e) {
+  } catch (e) {
     alert("Error: " + e.message);
   }
 });
