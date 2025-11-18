@@ -60,6 +60,13 @@ select {
   color: #e6eef8;
 }
 
+small {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
 table {
   width: 100%;
   margin-top: 20px;
@@ -98,8 +105,11 @@ a:hover {
   </select>
 
   <div id="inputSection">
-    <input id="steamInput1" placeholder="Enter first SteamID64 or vanity URL">
-    <input id="steamInput2" class="hidden" placeholder="Enter second SteamID64 or vanity URL">
+    <input id="steamInput1" placeholder="Enter first SteamID64 (e.g., 7656xxxxxxxxxxxx)">
+    <small>Example: 7656xxxxxxxxxxxx (SteamID64 has 17 digits)</small>
+
+    <input id="steamInput2" class="hidden" placeholder="Enter second SteamID64 (e.g., 7656xxxxxxxxxxxx)">
+    <small id="helper2" class="hidden">Example: 7656xxxxxxxxxxxx (for comparison)</small>
   </div>
 
   <button id="loadBtn">Load Friends</button>
@@ -121,13 +131,19 @@ a:hover {
 const proxy = "/api/proxy?url=";
 const modeSelect = document.getElementById("modeSelect");
 const input2 = document.getElementById("steamInput2");
+const helper2 = document.getElementById("helper2");
 const searchInput = document.getElementById("searchInput");
 let friendsData = []; // Store all friends for live search
 
-// Show/hide second input based on mode
+// Show/hide second input and helper based on mode
 modeSelect.addEventListener("change", () => {
-  if (modeSelect.value === "compare") input2.classList.remove("hidden");
-  else input2.classList.add("hidden");
+  if (modeSelect.value === "compare") {
+    input2.classList.remove("hidden");
+    helper2.classList.remove("hidden");
+  } else {
+    input2.classList.add("hidden");
+    helper2.classList.add("hidden");
+  }
 });
 
 // Convert vanity to SteamID64
@@ -163,7 +179,6 @@ function renderTable(filter = "") {
   let filtered = friendsData;
   if (filter) {
     const lower = filter.toLowerCase();
-    // Only show names that start with typed letters
     filtered = friendsData.filter(f => f.name.toLowerCase().startsWith(lower));
   }
   filtered.sort((a, b) => a.name.localeCompare(b.name));
