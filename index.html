@@ -6,13 +6,11 @@
 <title>Steam Friends — No API</title>
 <style>
   body { font-family: Arial, sans-serif; background:#0f1724; color:#e6eef8; display:flex; justify-content:center; padding:20px; }
-  .wrap { width:650px; background:#0b1220; border-radius:12px; padding:20px; }
+  .wrap { width:500px; background:#0b1220; border-radius:12px; padding:20px; }
   input, button { padding:10px; border-radius:8px; border:none; font-size:14px; margin-top:6px; width:100%; }
   button { cursor:pointer; background:#3b82f6; color:#fff; font-weight:600; }
   table { width:100%; border-collapse:collapse; margin-top:14px; text-align:left; }
   th, td { padding:8px; border-bottom:1px solid #1f2a3d; font-size:14px; }
-  img.avatar { width:32px; height:32px; border-radius:5px; }
-  .loading { color:#94a3b8; }
 </style>
 </head>
 <body>
@@ -25,7 +23,7 @@
 
 <table id="results" hidden>
   <thead>
-    <tr><th>Avatar</th><th>Friend</th><th>Level</th><th>Profile</th></tr>
+    <tr><th>Friend</th><th>Profile</th></tr>
   </thead>
   <tbody id="tblBody"></tbody>
 </table>
@@ -60,19 +58,17 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
         const friendIDs = [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
         if (!friendIDs.length) throw new Error("Could not read friends list — might be private.");
 
-        // Render all avatars immediately
+        // Render friend names and profile links only
         for (let friendID of friendIDs) {
             const row = document.createElement("tr");
             row.innerHTML = `
-              <td><img class="avatar" src="https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/${friendID.slice(-2)}/${friendID}_medium.jpg" onerror="this.src='https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg'"></td>
-              <td class="name loading">Loading…</td>
-              <td class="lvl loading">?</td>
-              <td><a href="https://steamcommunity.com/profiles/${friendID}" target="_blank">View</a></td>
+              <td>Loading…</td>
+              <td><a href="https://steamcommunity.com/profiles/${friendID}" target="_blank">View Profile</a></td>
             `;
             tbody.appendChild(row);
 
-            // Fetch profile info in background without blocking others
-            fetchFriendProfile(friendID, row);
+            // Fetch friend name
+            fetchFriendName(friendID, row);
         }
 
     } catch(err) {
@@ -80,23 +76,14 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
     }
 });
 
-async function fetchFriendProfile(id, row) {
+async function fetchFriendName(id, row) {
     try {
         const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
-
         const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
-        const levelMatch = profileHTML.match(/class="friendPlayerLevelNum">(\d+)</);
-
-        const nameCell = row.querySelector(".name");
-        const lvlCell = row.querySelector(".lvl");
-
+        const nameCell = row.querySelector("td");
         nameCell.textContent = nameMatch ? nameMatch[1].trim() : "Unknown";
-        lvlCell.textContent = levelMatch ? levelMatch[1] : "?";
-        lvlCell.classList.remove("loading");
-
     } catch {
-        row.querySelector(".name").textContent = "Unknown";
-        row.querySelector(".lvl").textContent = "?";
+        row.querySelector("td").textContent = "Unknown";
     }
 }
 </script>
