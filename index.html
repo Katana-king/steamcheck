@@ -8,8 +8,8 @@
 /* Base */
 body {
   font-family: 'Inter', sans-serif;
-  background: #f5f5f5;
-  color: #1f2937;
+  background: #0f1724;
+  color: #e6eef8;
   display: flex;
   justify-content: center;
   padding: 40px 20px;
@@ -18,10 +18,10 @@ body {
 /* Container */
 .container {
   width: 700px;
-  background: #ffffff;
+  background: #1e293b;
   border-radius: 16px;
   padding: 30px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   transition: transform 0.2s;
 }
 .container:hover {
@@ -33,7 +33,7 @@ h2 {
   font-weight: 600;
   margin-bottom: 20px;
   text-align: center;
-  color: #111827;
+  color: #f1f5f9;
 }
 
 /* Inputs & Selects & Button */
@@ -42,25 +42,24 @@ input, button, select {
   padding: 12px;
   margin-top: 10px;
   border-radius: 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #334155;
   font-size: 15px;
   outline: none;
   transition: all 0.2s;
 }
 
+input {
+  background: #1e293b;
+  color: #e6eef8;
+}
 input:focus, select:focus {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
-}
-
-input {
-  background: #f9fafb;
-  color: #111827;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.3);
 }
 
 select {
-  background: #f9fafb;
-  color: #111827;
+  background: #1e293b;
+  color: #e6eef8;
 }
 
 button {
@@ -78,7 +77,7 @@ button:hover {
 small {
   display: block;
   margin-top: 4px;
-  color: #6b7280;
+  color: #94a3b8;
   font-size: 12px;
 }
 
@@ -89,24 +88,25 @@ table {
   border-collapse: collapse;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
 th, td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #334155;
   vertical-align: middle;
+  color: #e6eef8;
 }
 
 th {
-  background: #f3f4f6;
-  color: #374151;
+  background: #334155;
+  color: #f1f5f9;
   font-weight: 600;
 }
 
 tr:hover {
-  background: #f9fafb;
+  background: #1e293b;
 }
 
 a {
@@ -158,7 +158,7 @@ a:hover {
 </div>
 
 <script>
-// Your JS logic remains unchanged
+// JS remains same
 const proxy = "/api/proxy?url=";
 const modeSelect = document.getElementById("modeSelect");
 const input2 = document.getElementById("steamInput2");
