@@ -5,42 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Steam Friends Tool with Search</title>
 <style>
+/* Base */
 body {
   font-family: 'Inter', sans-serif;
-  background: #0f1724;
-  color: #e6eef8;
+  background: #f5f5f5;
+  color: #1f2937;
   display: flex;
   justify-content: center;
   padding: 40px 20px;
 }
 
+/* Container */
 .container {
   width: 700px;
-  background: #1e293b;
+  background: #ffffff;
   border-radius: 16px;
   padding: 30px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+.container:hover {
+  transform: translateY(-2px);
 }
 
+/* Headings */
 h2 {
   font-weight: 600;
   margin-bottom: 20px;
   text-align: center;
+  color: #111827;
 }
 
+/* Inputs & Selects & Button */
 input, button, select {
   width: 100%;
   padding: 12px;
   margin-top: 10px;
-  border-radius: 8px;
-  border: none;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
   font-size: 15px;
   outline: none;
+  transition: all 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
 }
 
 input {
-  background: #334155;
-  color: #e6eef8;
+  background: #f9fafb;
+  color: #111827;
+}
+
+select {
+  background: #f9fafb;
+  color: #111827;
 }
 
 button {
@@ -48,47 +68,57 @@ button {
   color: #fff;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  border: none;
 }
-
 button:hover {
   background: #2563eb;
 }
 
-select {
-  background: #334155;
-  color: #e6eef8;
-}
-
+/* Small text */
 small {
   display: block;
   margin-top: 4px;
-  color: #94a3b8;
+  color: #6b7280;
   font-size: 12px;
 }
 
+/* Table */
 table {
   width: 100%;
   margin-top: 20px;
   border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
 }
 
 th, td {
-  padding: 10px;
+  padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid #e5e7eb;
   vertical-align: middle;
+}
+
+th {
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+}
+
+tr:hover {
+  background: #f9fafb;
 }
 
 a {
   color: #3b82f6;
   text-decoration: none;
+  font-weight: 500;
 }
-
 a:hover {
   text-decoration: underline;
 }
 
+/* Hidden utility */
 .hidden {
   display: none;
 }
@@ -128,14 +158,14 @@ a:hover {
 </div>
 
 <script>
+// Your JS logic remains unchanged
 const proxy = "/api/proxy?url=";
 const modeSelect = document.getElementById("modeSelect");
 const input2 = document.getElementById("steamInput2");
 const helper2 = document.getElementById("helper2");
 const searchInput = document.getElementById("searchInput");
-let friendsData = []; // Store all friends for live search
+let friendsData = []; 
 
-// Show/hide second input and helper based on mode
 modeSelect.addEventListener("change", () => {
   if (modeSelect.value === "compare") {
     input2.classList.remove("hidden");
@@ -146,7 +176,6 @@ modeSelect.addEventListener("change", () => {
   }
 });
 
-// Convert vanity to SteamID64
 async function resolveSteamID(input) {
   if (!isNaN(input)) return input;
   const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text();
@@ -155,13 +184,11 @@ async function resolveSteamID(input) {
   return match[1];
 }
 
-// Fetch friend IDs
 async function fetchFriendIDs(steamID64) {
   const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text();
   return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
 }
 
-// Fetch friend name only
 async function fetchFriendName(id) {
   try {
     const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
@@ -172,7 +199,6 @@ async function fetchFriendName(id) {
   }
 }
 
-// Render table with optional filter
 function renderTable(filter = "") {
   const tbody = document.getElementById("tblBody");
   tbody.innerHTML = "";
@@ -233,7 +259,6 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
   }
 });
 
-// Live search
 searchInput.addEventListener("input", (e) => {
   renderTable(e.target.value);
 });
