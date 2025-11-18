@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Steam Friends — Web-Only Finder</title>
+<style>
+  body { font-family: Arial,sans-serif; background:#0f1724; color:#e6eef8; display:flex; justify-content:center; padding:20px;}
+  .wrap { width: 600px; background:#0b1220; border-radius:12px; padding:20px; }
+  input, button { padding:10px; border-radius:8px; border:none; font-size:14px; margin-top:6px; width:100%;}
+  button { cursor:pointer; background:#3b82f6; color:#fff; font-weight:600;}
+  table { width:100%; border-collapse:collapse; margin-top:12px;}
+  th, td { padding:8px; text-align:left; border-bottom:1px solid #1a2030; font-size:13px;}
+  img.avatar { width:36px; height:36px; border-radius:6px; vertical-align:middle;}
+  td a { color:#60a5fa; text-decoration:none; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Steam Friends — Web-Only Finder</h2>
+    <p>Enter your SteamID64 or vanity URL (public profile only):</p>
+    <input id="steamId" placeholder="SteamID64 or vanity name"/>
+    <button id="startBtn">Load Friends</button>
+
+    <table id="table" hidden>
+      <thead>
+        <tr><th>Avatar</th><th>Friend</th><th>Profile</th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', async () => {
+  const steamId = document.getElementById('steamId').value.trim();
+  if (!steamId) { alert('Enter SteamID64 or vanity URL'); return; }
+
+  const proxy = "/api/proxy?url=";
+
+  const table = document.getElementById('table');
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  table.hidden = false;
+
+  try {
+    // Convert vanity URL to SteamID64 if needed
+    let steamID64 = steamId;
+    if (isNaN(steamId)) {
+      const res = await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${steamId}/?xml=1`));
+      const text = await res.text();
+      const match = text.match(/<steamID64>(\d+)<\/steamID64>/);
+      if (!match) throw new Error('Invalid vanity URL or private profile');
+      steamID64 = match[1];
+    }
+
+    // Fetch friend list XML
+    const friendsRes = await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends?xml=1`));
+    const friendsXml = await friendsRes.text();
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(friendsXml, "application/xml");
+    const friends = xmlDoc.getElementsByTagName('friend');
+
+    if (!friends.length) { alert('No friends found or profile is private'); return; }
+
+    for (let f of friends) {
+      const name = f.getElementsByTagName('steamID')[0]?.textContent || 'Unknown';
+      const id = f.getElementsByTagName('friendID')[0]?.textContent;
+      const avatar = `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/${id.slice(-2)}/${id}_full.jpg`;
+      const profileUrl = `https://steamcommunity.com/profiles/${id}`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><img class="avatar" src="${avatar}" alt="avatar"></td>
+        <td>${name}</td>
+        <td><a href="${profileUrl}" target="_blank">View Profile</a></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+});
+</script>
+</body>
+</html>
