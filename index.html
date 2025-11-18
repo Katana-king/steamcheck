@@ -43,41 +43,45 @@ document.getElementById('startBtn').addEventListener('click', async () => {
   table.hidden = false;
 
   try {
-    // Convert vanity URL to SteamID64 if needed
+    // Convert vanity to SteamID64
     let steamID64 = steamId;
     if (isNaN(steamId)) {
       const res = await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${steamId}/?xml=1`));
-      const text = await res.text();
-      const match = text.match(/<steamID64>(\d+)<\/steamID64>/);
-      if (!match) throw new Error('Invalid vanity URL or private profile');
+      const txt = await res.text();
+      const match = txt.match(/<steamID64>(\d+)<\/steamID64>/);
+      if (!match) throw new Error("Invalid vanity URL or private profile");
       steamID64 = match[1];
     }
 
-    // Fetch friend list XML
-    const friendsRes = await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends?xml=1`));
-    const friendsXml = await friendsRes.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(friendsXml, "application/xml");
-    const friends = xmlDoc.getElementsByTagName('friend');
+    // Fetch friends page (HTML, not XML)
+    const friendsRes = await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`));
+    const html = await friendsRes.text();
 
-    if (!friends.length) { alert('No friends found or profile is private'); return; }
+    // Extract friends using regex
+    const friends = [...html.matchAll(/data-steamid="(\d+)".*?friend_block_content">([^<]+)/gms)];
 
-    for (let f of friends) {
-      const name = f.getElementsByTagName('steamID')[0]?.textContent || 'Unknown';
-      const id = f.getElementsByTagName('friendID')[0]?.textContent;
-      const avatar = `https://steamcdn-a.akamaihd.net/steamcommunity/public/images/avatars/${id.slice(-2)}/${id}_full.jpg`;
-      const profileUrl = `https://steamcommunity.com/profiles/${id}`;
+    if (!friends.length) {
+      alert("No friends found or profile is private.");
+      return;
+    }
+
+    for (let match of friends) {
+      const friendID = match[1];
+      const friendName = match[2].trim();
+      const profileUrl = `https://steamcommunity.com/profiles/${friendID}`;
+      const avatar = `https://avatars.akamai.steamstatic.com/${friendID}.jpg`;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><img class="avatar" src="${avatar}" alt="avatar"></td>
-        <td>${name}</td>
+        <td>${friendName}</td>
         <td><a href="${profileUrl}" target="_blank">View Profile</a></td>
       `;
       tbody.appendChild(tr);
     }
+
   } catch(e) {
-    alert('Error: ' + e.message);
+    alert("Error: " + e.message);
   }
 });
 </script>
