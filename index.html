@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Steam Friends Tool with Live Search</title>
+<title>steam friends tool with live search</title>
 <style>
+/* general layout like a csgo lobby, dark mode cyka */
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'inter', sans-serif;
   background: #0a0f1b;
   color: #e0e0e0;
   display: flex;
@@ -19,7 +20,7 @@ body {
   background: #101828;
   border-radius: 16px;
   padding: 30px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.6); /* fancy shadows, blyat */
 }
 
 h2 {
@@ -40,7 +41,7 @@ input, button, select {
 }
 
 input {
-  background: #1e293b;
+  background: #1e293b; /* dark panels like csgo hud */
   color: #e0e0e0;
 }
 
@@ -53,7 +54,7 @@ button {
 }
 
 button:hover {
-  background: #3730a3;
+  background: #3730a3; /* hover like flicking mouse cyka */
 }
 
 select {
@@ -64,7 +65,7 @@ select {
 small {
   display: block;
   margin-top: 4px;
-  color: #94a3b8;
+  color: #94a3b8; /* less bright, blyat */
   font-size: 12px;
 }
 
@@ -97,31 +98,31 @@ a:hover {
 </head>
 <body>
 <div class="container">
-  <h2>Steam Friends Tool with Live Search</h2>
+  <h2>steam friends tool with live search</h2>
 
-  <label for="modeSelect">Choose Mode:</label>
+  <label for="modeSelect">choose mode:</label>
   <select id="modeSelect">
-    <option value="check">Check Friends</option>
-    <option value="compare">Compare Friends</option>
+    <option value="check">check friends</option>
+    <option value="compare">compare friends</option>
   </select>
 
   <div id="inputSection">
-    <input id="steamInput1" placeholder="Enter first SteamID64 (e.g., 7656xxxxxxxxxxxx)">
-    <small>Example: 7656xxxxxxxxxxxx (SteamID64 has 17 digits)</small>
+    <input id="steamInput1" placeholder="enter first steamid64 (e.g., 7656xxxxxxxxxxxx)">
+    <small>example: 7656xxxxxxxxxxxx (steamid64 has 17 digits)</small>
 
-    <input id="steamInput2" class="hidden" placeholder="Enter second SteamID64 (e.g., 7656xxxxxxxxxxxx)">
-    <small id="helper2" class="hidden">Example: 7656xxxxxxxxxxxx (for comparison)</small>
+    <input id="steamInput2" class="hidden" placeholder="enter second steamid64 (e.g., 7656xxxxxxxxxxxx)">
+    <small id="helper2" class="hidden">example: 7656xxxxxxxxxxxx (for comparison)</small>
   </div>
 
-  <button id="loadBtn">Load Friends</button>
+  <button id="loadBtn">load friends</button>
 
-  <input id="searchInput" class="hidden" placeholder="Search friends by name...">
+  <input id="searchInput" class="hidden" placeholder="search friends by name...">
 
   <table id="results" hidden>
     <thead>
       <tr>
-        <th>Friend</th>
-        <th>Profile</th>
+        <th>friend</th>
+        <th>profile</th>
       </tr>
     </thead>
     <tbody id="tblBody"></tbody>
@@ -129,113 +130,124 @@ a:hover {
 </div>
 
 <script>
-const proxy = "/api/proxy?url=";
-const modeSelect = document.getElementById("modeSelect");
-const input2 = document.getElementById("steamInput2");
-const helper2 = document.getElementById("helper2");
-const searchInput = document.getElementById("searchInput");
-let friendsData = []; // Store all friends for live search
+// proxy because steam cors is a bitch blyat
+const proxy = "/api/proxy?url="
 
-// Show/hide second input and helper based on mode
+// grab stuff like picking weapons cyka
+const modeSelect = document.getElementById("modeSelect")
+const input2 = document.getElementById("steamInput2")
+const helper2 = document.getElementById("helper2")
+const searchInput = document.getElementById("searchInput")
+
+// store friends like inventory, dont lose them blyat
+let friendsData = []
+
+// show/hide second input based on mode, like switching awp/ak
 modeSelect.addEventListener("change", () => {
   if (modeSelect.value === "compare") {
-    input2.classList.remove("hidden");
-    helper2.classList.remove("hidden");
+    input2.classList.remove("hidden") // only for compare blyat
+    helper2.classList.remove("hidden")
   } else {
-    input2.classList.add("hidden");
-    helper2.classList.add("hidden");
+    input2.classList.add("hidden")
+    helper2.classList.add("hidden")
   }
-});
+})
 
-// Convert vanity to SteamID64
+// convert vanity url to steamid64, steam sometimes stupid cyka
 async function resolveSteamID(input) {
-  if (!isNaN(input)) return input;
-  const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text();
-  const match = xmlTxt.match(/<steamID64>(\d+)<\/steamID64>/);
-  if (!match) throw new Error("Invalid vanity URL or private profile.");
-  return match[1];
+  if (!isNaN(input)) return input // already number, ok
+  const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text()
+  const match = xmlTxt.match(/<steamID64>(\d+)<\/steamID64>/)
+  if (!match) throw new Error("invalid vanity url or private profile blyat")
+  return match[1]
 }
 
-// Fetch friend IDs
+// fetch friend ids like scouting enemies
 async function fetchFriendIDs(steamID64) {
-  const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text();
-  return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
+  const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text()
+  return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1])
 }
 
-// Fetch friend name only
+// fetch friend names only, no avatars, skins dont matter blyat
 async function fetchFriendName(id) {
   try {
-    const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
-    const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
-    return nameMatch ? nameMatch[1].trim() : "Unknown";
+    const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text()
+    const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</)
+    return nameMatch ? nameMatch[1].trim() : "unknown blyat"
   } catch {
-    return "Unknown";
+    return "unknown blyat"
   }
 }
 
-// Render table with optional filter
+// render table like putting enemies on radar
 function renderTable(filter = "") {
-  const tbody = document.getElementById("tblBody");
-  tbody.innerHTML = "";
-  let filtered = friendsData;
+  const tbody = document.getElementById("tblBody")
+  tbody.innerHTML = ""
+  let filtered = friendsData
+
+  // filter friends like flick shots, precise cyka
   if (filter) {
-    const lower = filter.toLowerCase();
-    filtered = friendsData.filter(f => f.name.toLowerCase().startsWith(lower));
+    const lower = filter.toLowerCase()
+    filtered = friendsData.filter(f => f.name.toLowerCase().startsWith(lower))
   }
-  filtered.sort((a, b) => a.name.localeCompare(b.name));
+
+  filtered.sort((a, b) => a.name.localeCompare(b.name)) // alphabetically, no chaos blyat
+
+  // populate table like spraying bullets
   filtered.forEach(friend => {
-    const row = document.createElement("tr");
+    const row = document.createElement("tr")
     row.innerHTML = `
       <td>${friend.name}</td>
-      <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
-    `;
-    tbody.appendChild(row);
-  });
+      <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">view profile</a></td>
+    `
+    tbody.appendChild(row)
+  })
 }
 
+// load friends, like buying guns at buy phase cyka
 document.getElementById("loadBtn").addEventListener("click", async () => {
-  const input1 = document.getElementById("steamInput1").value.trim();
-  const input2Val = (modeSelect.value === "compare") ? input2.value.trim() : "";
+  const input1 = document.getElementById("steamInput1").value.trim()
+  const input2Val = (modeSelect.value === "compare") ? input2.value.trim() : ""
 
-  if (!input1) return alert("Enter at least one SteamID or vanity URL!");
+  if (!input1) return alert("enter at least one steamid or vanity url blyat")
 
-  document.getElementById("results").hidden = false;
-  searchInput.classList.remove("hidden");
-  friendsData = [];
-  renderTable();
+  document.getElementById("results").hidden = false
+  searchInput.classList.remove("hidden")
+  friendsData = []
+  renderTable()
 
   try {
-    const id1 = await resolveSteamID(input1);
-    const friends1 = await fetchFriendIDs(id1);
-    let friendsToShow = friends1;
+    const id1 = await resolveSteamID(input1)
+    const friends1 = await fetchFriendIDs(id1)
+    let friendsToShow = friends1
 
     if (modeSelect.value === "compare") {
-      if (!input2Val) return alert("Enter second SteamID or vanity URL for comparison.");
-      const id2 = await resolveSteamID(input2Val);
-      const friends2 = await fetchFriendIDs(id2);
-      friendsToShow = friends1.filter(f => friends2.includes(f));
+      if (!input2Val) return alert("enter second steamid or vanity url for comparison blyat")
+      const id2 = await resolveSteamID(input2Val)
+      const friends2 = await fetchFriendIDs(id2)
+      friendsToShow = friends1.filter(f => friends2.includes(f)) // only mutual friends, like clutching cyka
     }
 
     if (!friendsToShow.length) {
-      document.getElementById("tblBody").innerHTML = `<tr><td colspan="2">No friends found.</td></tr>`;
-      return;
+      document.getElementById("tblBody").innerHTML = `<tr><td colspan="2">no friends found, all shots missed blyat</td></tr>`
+      return
     }
 
     friendsToShow.forEach(async id => {
-      const name = await fetchFriendName(id);
-      friendsData.push({id, name});
-      renderTable(searchInput.value);
-    });
+      const name = await fetchFriendName(id)
+      friendsData.push({id, name})
+      renderTable(searchInput.value) // live like radar check cyka
+    })
 
   } catch(err) {
-    alert(err.message);
+    alert(err.message + " dont rage, its just steam blyat")
   }
-});
+})
 
-// Live search
+// live search like flick shot checking fast
 searchInput.addEventListener("input", (e) => {
-  renderTable(e.target.value);
-});
+  renderTable(e.target.value)
+})
 </script>
 </body>
 </html>
