@@ -15,7 +15,7 @@
   }
 
   .container {
-    width: 650px;
+    width: 700px;
     background: #1e293b;
     border-radius: 16px;
     padding: 30px;
@@ -62,9 +62,18 @@
   }
 
   th, td {
-    padding: 12px;
+    padding: 10px;
     text-align: left;
     border-bottom: 1px solid #334155;
+    vertical-align: middle;
+  }
+
+  img.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    margin-right: 8px;
+    vertical-align: middle;
   }
 
   a {
@@ -74,6 +83,11 @@
 
   a:hover {
     text-decoration: underline;
+  }
+
+  .friend-name {
+    display: flex;
+    align-items: center;
   }
 </style>
 </head>
@@ -113,14 +127,22 @@ async function fetchFriendIDs(steamID64) {
   return [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
 }
 
-// Fetch friend name
-async function fetchFriendName(id) {
+// Fetch friend name and avatar
+async function fetchFriendInfo(id) {
   try {
     const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
+
+    // Name
     const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
-    return nameMatch ? nameMatch[1].trim() : "Unknown";
+    const name = nameMatch ? nameMatch[1].trim() : "Unknown";
+
+    // Avatar
+    const avatarMatch = profileHTML.match(/src="([^"]+)"[^>]*class="playerAvatar"/);
+    const avatar = avatarMatch ? avatarMatch[1] : "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg";
+
+    return { id, name, avatar };
   } catch {
-    return "Unknown";
+    return { id, name: "Unknown", avatar: "https://steamcommunity-a.akamaihd.net/public/images/avatars/default.jpg" };
   }
 }
 
@@ -160,17 +182,17 @@ document.getElementById("loadBtn").addEventListener("click", async () => {
       friendsData.forEach(friend => {
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${friend.name}</td>
+          <td class="friend-name"><img src="${friend.avatar}" class="avatar">${friend.name}</td>
           <td><a href="https://steamcommunity.com/profiles/${friend.id}" target="_blank">View Profile</a></td>
         `;
         tbody.appendChild(row);
       });
     }
 
-    // Fetch names asynchronously and render sorted table as they arrive
+    // Fetch info asynchronously
     mutualFriends.forEach(async id => {
-      const name = await fetchFriendName(id);
-      friendsData.push({id, name});
+      const info = await fetchFriendInfo(id);
+      friendsData.push(info);
       renderTable();
     });
 
