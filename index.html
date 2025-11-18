@@ -2,89 +2,148 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Steam Friends — No API</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steam Friends Checker</title>
 <style>
-  body { font-family: Arial, sans-serif; background:#0f1724; color:#e6eef8; display:flex; justify-content:center; padding:20px; }
-  .wrap { width:500px; background:#0b1220; border-radius:12px; padding:20px; }
-  input, button { padding:10px; border-radius:8px; border:none; font-size:14px; margin-top:6px; width:100%; }
-  button { cursor:pointer; background:#3b82f6; color:#fff; font-weight:600; }
-  table { width:100%; border-collapse:collapse; margin-top:14px; text-align:left; }
-  th, td { padding:8px; border-bottom:1px solid #1f2a3d; font-size:14px; }
+  /* Base layout like your site */
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f1724;
+    color: #e6eef8;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .container {
+    width: 600px;
+    background: #1e293b;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  }
+
+  h2 {
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  input, button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 15px;
+  }
+
+  input {
+    background: #334155;
+    color: #e6eef8;
+  }
+
+  button {
+    background: #3b82f6;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  button:hover {
+    background: #2563eb;
+  }
+
+  table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+  }
+
+  a {
+    color: #3b82f6;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="container">
+  <h2>Steam Friends Checker</h2>
+  <input id="steamInput" placeholder="Enter SteamID64 or vanity URL">
+  <button id="loadBtn">Load Friends</button>
 
-<h2>Steam Friends — Finder (No API Key)</h2>
-<p>Enter SteamID64 or vanity URL:</p>
-<input id="steamInput" placeholder="Example: 76561198xxxxxx or gaben">
-<button id="loadBtn">Load Friends</button>
-
-<table id="results" hidden>
-  <thead>
-    <tr><th>Friend</th><th>Profile</th></tr>
-  </thead>
-  <tbody id="tblBody"></tbody>
-</table>
-
+  <table id="results" hidden>
+    <thead>
+      <tr>
+        <th>Friend</th>
+        <th>Profile</th>
+      </tr>
+    </thead>
+    <tbody id="tblBody"></tbody>
+  </table>
 </div>
 
 <script>
-const proxy = "/api/proxy?url="; // Your serverless proxy
+const proxy = "/api/proxy?url=";
 
 document.getElementById("loadBtn").addEventListener("click", async () => {
-    const input = document.getElementById("steamInput").value.trim();
-    if (!input) return alert("Enter a SteamID or vanity profile name!");
+  const input = document.getElementById("steamInput").value.trim();
+  if (!input) return alert("Enter a SteamID or vanity URL!");
 
-    const resultsTable = document.getElementById("results");
-    const tbody = document.getElementById("tblBody");
-    resultsTable.hidden = false;
-    tbody.innerHTML = "";
+  const resultsTable = document.getElementById("results");
+  const tbody = document.getElementById("tblBody");
+  resultsTable.hidden = false;
+  tbody.innerHTML = "";
 
-    let steamID64 = input;
+  let steamID64 = input;
 
-    try {
-        // Convert vanity to SteamID64
-        if (isNaN(input)) {
-            const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text();
-            const match = xmlTxt.match(/<steamID64>(\d+)<\/steamID64>/);
-            if (!match) throw new Error("Invalid vanity URL or private profile.");
-            steamID64 = match[1];
-        }
-
-        // Fetch friends HTML page
-        const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text();
-        const friendIDs = [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
-        if (!friendIDs.length) throw new Error("Could not read friends list — might be private.");
-
-        // Render friend names and profile links only
-        for (let friendID of friendIDs) {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-              <td>Loading…</td>
-              <td><a href="https://steamcommunity.com/profiles/${friendID}" target="_blank">View Profile</a></td>
-            `;
-            tbody.appendChild(row);
-
-            // Fetch friend name
-            fetchFriendName(friendID, row);
-        }
-
-    } catch(err) {
-        alert(err.message);
+  try {
+    if (isNaN(input)) {
+      const xmlTxt = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/id/${input}/?xml=1`))).text();
+      const match = xmlTxt.match(/<steamID64>(\d+)<\/steamID64>/);
+      if (!match) throw new Error("Invalid vanity URL or private profile.");
+      steamID64 = match[1];
     }
+
+    const html = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${steamID64}/friends/`))).text();
+    const friendIDs = [...html.matchAll(/data-steamid="(\d+)"/g)].map(m => m[1]);
+    if (!friendIDs.length) throw new Error("Could not read friends list — might be private.");
+
+    for (let friendID of friendIDs) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>Loading…</td>
+        <td><a href="https://steamcommunity.com/profiles/${friendID}" target="_blank">View Profile</a></td>
+      `;
+      tbody.appendChild(row);
+      fetchFriendName(friendID, row);
+    }
+
+  } catch(err) {
+    alert(err.message);
+  }
 });
 
 async function fetchFriendName(id, row) {
-    try {
-        const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
-        const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
-        const nameCell = row.querySelector("td");
-        nameCell.textContent = nameMatch ? nameMatch[1].trim() : "Unknown";
-    } catch {
-        row.querySelector("td").textContent = "Unknown";
-    }
+  try {
+    const profileHTML = await (await fetch(proxy + encodeURIComponent(`https://steamcommunity.com/profiles/${id}`))).text();
+    const nameMatch = profileHTML.match(/<span class="actual_persona_name">([^<]+)</);
+    const nameCell = row.querySelector("td");
+    nameCell.textContent = nameMatch ? nameMatch[1].trim() : "Unknown";
+  } catch {
+    row.querySelector("td").textContent = "Unknown";
+  }
 }
 </script>
 </body>
